@@ -21,7 +21,6 @@ import (
 	"github.com/looplj/axonhub/axon/permission/grant"
 	"github.com/looplj/axonhub/axon/permission/policy"
 	"github.com/looplj/axonhub/axon/provider/anthropic"
-	"github.com/looplj/axonhub/axon/summarizer"
 	"github.com/looplj/axonhub/axon/task"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
@@ -32,7 +31,6 @@ import (
 	"github.com/looplj/axonhub/cmd/axonclaw/claw"
 	"github.com/looplj/axonhub/cmd/axonclaw/cmds"
 	"github.com/looplj/axonhub/cmd/axonclaw/conf"
-	"github.com/looplj/axonhub/cmd/axonclaw/prompts"
 	"github.com/looplj/axonhub/cmd/axonclaw/skills"
 )
 
@@ -193,7 +191,8 @@ func runAgent(cfg conf.Config, wd string, debug bool) error {
 	axonclawDir := filepath.Join(wd, conf.DefaultDir)
 
 	var contextMgr agent.ContextManager
-	contextCfg := agent.DefaultContextManagerConfig()
+
+	contextCfg := claw.DefaultContextManagerConfig()
 	contextCfg.Enabled = true
 	contextCfg.Logger = logger
 	if cfg.ContextRecentMessages > 0 {
@@ -203,31 +202,11 @@ func runAgent(cfg conf.Config, wd string, debug bool) error {
 		contextCfg.SoftTokenLimit = cfg.ContextSoftTokenLimit
 	}
 
-	contextCfg.Summarizer = summarizer.NewProvider(summarizer.ProviderOptions{
-		Provider: provider,
-		Model:    boot.Model,
-		SystemPrompt: strings.Join(
-			prompts.BuildSystemPrompts(
-				prompts.PromptEnv{
-					Date:              boot.Date,
-					Timezone:          boot.Timezone,
-					OS:                boot.OS,
-					Workspace:         wd,
-					ThreadID:          boot.ThreadID,
-					AxonClawPath:      boot.AxonClawPath,
-					SkillsRoot:        boot.SkillsRoot,
-					AgentID:           boot.AgentID,
-					AgentName:         boot.AgentName,
-					CreatedByUserName: boot.CreatedByUserName,
-				},
-				boot.Prompts,
-			),
-			"\n\n",
-		),
-	})
+	contextCfg.Summarizer = claw.NewSmartSummarizer(provider, claw.DefaultSmartSummarizerConfig())
 
-	contextStore := agent.NewContextManagerFileStore(filepath.Join(axonclawDir, "messages"))
-	cm, err := agent.NewSmartContextManager(contextCfg, contextStore)
+	contextStore := claw.NewContextManagerFileStore(filepath.Join(axonclawDir, "messages"))
+
+	cm, err := claw.NewSmartContextManager(contextCfg, contextStore)
 	if err != nil {
 		return fmt.Errorf("initialize context manager: %w", err)
 	}
