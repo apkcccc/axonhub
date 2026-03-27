@@ -21,6 +21,7 @@ import (
 	"github.com/looplj/axonhub/axon/permission/grant"
 	"github.com/looplj/axonhub/axon/permission/policy"
 	"github.com/looplj/axonhub/axon/provider/anthropic"
+	"github.com/looplj/axonhub/axon/subagent"
 	"github.com/looplj/axonhub/axon/task"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
@@ -202,20 +203,12 @@ func runAgent(cfg conf.Config, wd string, debug bool) error {
 		contextCfg.SoftTokenLimit = cfg.ContextSoftTokenLimit
 	}
 
-	contextCfg.Summarizer = claw.NewSmartSummarizer(provider, claw.DefaultSmartSummarizerConfig())
+	subagentMgr := subagent.NewManagerFromPath(filepath.Join(wd, "subagents"))
+	subagentMgr.RegisterBundled(claw.SummarizerDefinition())
 
-	contextStore := claw.NewContextManagerFileStore(filepath.Join(axonclawDir, "messages"))
-
-	cm, err := claw.NewSmartContextManager(contextCfg, contextStore)
-	if err != nil {
-		return fmt.Errorf("initialize context manager: %w", err)
+	if err := subagentMgr.Load(); err != nil {
+		logger.Warn("failed to load subagent definitions", "error", err)
 	}
-	contextMgr = cm
-
-	logger.Info("context manager enabled",
-		"max_recent_messages", contextCfg.MaxRecentMessages,
-		"soft_token_limit", contextCfg.SoftTokenLimit,
-	)
 
 	eventBus := bus.New(bus.WithRecover(logger), bus.WithTracing())
 	defer eventBus.Close()
@@ -239,6 +232,27 @@ func runAgent(cfg conf.Config, wd string, debug bool) error {
 		}
 		return nil
 	}))
+
+	skillMgr := claw.NewSkillManager(wd, boot, logger)
+
+	contextCfg.Summarizer = claw.NewSmartSummarizer(claw.SmartSummarizerOptions{
+		Manager:   subagentMgr,
+		Provider:  provider,
+		Model:     boot.Model,
+		SkillMgr:  skillMgr,
+		Workspace: wd,
+		Bus:       eventBus,
+		Logger:    logger,
+	})
+
+	contextStore := claw.NewContextManagerFileStore(filepath.Join(axonclawDir, "messages"))
+
+	cm, err := claw.NewSmartContextManager(contextCfg, contextStore)
+	if err != nil {
+		return fmt.Errorf("initialize context manager: %w", err)
+	}
+
+	contextMgr = cm
 
 	permissionDir, err := conf.PermissionDir()
 	if err != nil {
@@ -280,6 +294,8 @@ func runAgent(cfg conf.Config, wd string, debug bool) error {
 		Boot:           boot,
 		PermEvaluator:  permEvaluator,
 		Bus:            eventBus,
+		SubagentMgr:    subagentMgr,
+		SkillMgr:       skillMgr,
 	})
 
 	cm.OnCompaction(func() {

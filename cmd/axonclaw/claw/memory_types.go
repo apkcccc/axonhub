@@ -21,7 +21,7 @@ type MemoryEntry struct {
 	Content   string      `json:"content"`
 	CreatedAt time.Time   `json:"created_at"`
 	ExpiresAt *time.Time  `json:"expires_at,omitempty"`
-	Metadata  MemoryMeta  `json:"metadata,omitempty"`
+	Metadata  MemoryMeta  `json:"metadata"`
 }
 
 type MemoryMeta struct {

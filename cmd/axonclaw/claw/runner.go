@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -63,6 +62,8 @@ type NewOptions struct {
 	PermEvaluator  *permission.Evaluator
 	Bus            bus.EventBus
 	TaskScheduler  *task.Scheduler
+	SubagentMgr    *subagent.Manager
+	SkillMgr       *tools.SkillManager
 }
 
 func New(opts NewOptions) *Runner {
@@ -87,14 +88,8 @@ func New(opts NewOptions) *Runner {
 		ConfigDir: opts.Boot.ConfigDir,
 	})
 
-	agentDir := filepath.Join(opts.Workspace, ".agent", "subagents")
-
-	subagentMgr := subagent.NewManagerFromPath(agentDir)
-	if err := subagentMgr.Load(); err != nil {
-		opts.Logger.Warn("failed to load subagent definitions", "error", err, "path", agentDir)
-	}
-
-	skillMgr := newSkillManager(opts.Workspace, opts.Boot, opts.Logger)
+	subagentMgr := opts.SubagentMgr
+	skillMgr := opts.SkillMgr
 
 	toolSource := &agentToolSource{agent: a}
 	registerTools(a, opts.Workspace, opts.Boot, opts.Logger, opts.Client, opts.Provider, opts.Bus, mcpMgr, subagentMgr, skillMgr)
