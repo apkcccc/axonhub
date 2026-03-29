@@ -9,8 +9,7 @@ services:
       - key: AXONHUB_DB_DIALECT
         value: postgres
       - key: AXONHUB_DB_DSN
-        value: postgresql://postgres.wqbsmokjmmnukdpyxlvx:db1043960000@aws-1-us-east-2.pooler.supabase.com:6543/postgres
+        value: postgresql://postgres.wqbsmokjmmnukdpyxlvx:db1043960000@aws-1-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require&prefer_simple_protocol=true
       - key: AXONHUB_LOG_LEVEL
-        value: info
-    healthCheckPath: /health
+        value: infohealthCheckPath: /health
     autoDeploy: true
