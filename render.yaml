@@ -9,7 +9,7 @@ services:
       - key: AXONHUB_DB_DIALECT
         value: postgres
       - key: AXONHUB_DB_DSN
-        value: postgres://postgres.bqmlfsmzbtdcgybnkrls:dubo104396104396@aws-1-us-east-1.pooler.supabase.com:6543/postgres
+        value: postgresql://postgres:dubo104396104396@db.bqmlfsmzbtdcgybnkrls.supabase.co:5432/postgres
       - key: AXONHUB_LOG_LEVEL
         value: info
       - key: AXONHUB_CACHE_MODE
