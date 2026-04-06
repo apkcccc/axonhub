@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: axonhub
+    runtime: docker
+    plan: free
+    envVars:
+      - key: AXONHUB_SERVER_PORT
+        value: 8090
+      - key: AXONHUB_DB_DIALECT
+        value: postgres
+      - key: AXONHUB_DB_DSN
+        value: postgresql://postgres:dubo104396104396@db.bqmlfsmzbtdcgybnkrls.supabase.co:5432/postgres
+      - key: AXONHUB_LOG_LEVEL
+        value: info
+      - key: AXONHUB_CACHE_MODE
+        value: redis
+      - key: AXONHUB_CACHE_REDIS_URL
+        value: rediss://default:gQAAAAAAAWsiAAIncDJlYjhiYTNjYTM5ZjY0YzM2YjkzNjNiYTA3ZTA3NGY4YXAyOTI5NjI@sunny-lark-92962.upstash.io:6379
+      - key: AXONHUB_CACHE_REDIS_TLS
+        value: "true"
+      - key: AXONHUB_CACHE_REDIS_EXPIRATION
+        value: 30m
+      - key: AXONHUB_PROVIDER_QUOTA_CHECK_INTERVAL
+        value: 30m
+      - key: AXONHUB_SERVER_DEBUG
+        value: "false"
+    healthCheckPath: /health
+    autoDeploy: true
